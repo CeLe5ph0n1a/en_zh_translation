@@ -19,7 +19,7 @@ nmt_trainer/
 ├── model.py            # TransformerNMT 模型定义
 ├── trainer.py          # 训练循环 + 评估 + 检查点管理
 ├── dataset.py          # 数据加载、词汇表构建
-├── data/               # 数据集存放目录
+├── data/               # 数据集存放目录（数据集在huggingface.co/datasets/Helsinki-NLP/opus-100下载）
 │   ├── train.json      # 训练集 (JSON，每行 {"en": "...", "zh": "..."})
 │   ├── validation.json # 验证集
 │   └── test.json       # 测试集（可选）
