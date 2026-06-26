@@ -1,0 +1,15 @@
+# 检查点文件（体积大）
+checkpoints/*.pt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.codebuddy/
+.vscode/
+.idea/
+
+# Logs
+*.log

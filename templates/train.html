@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>训练 - NMT Trainer</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>NMT Trainer</h1>
+  <nav class="nav-tabs">
+    <span class="nav-tab active">&#9881; 训练</span>
+    <a class="nav-tab" href="/translate">&#128172; 翻译</a>
+  </nav>
+  <span class="dev-badge" id="device-badge">--</span>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>&#9881; 训练参数</h3>
+      <form id="train-form">
+        <div class="form-row">
+          <label><span class="param-name">Epochs</span> 训练轮数 <span class="param-desc">（完整遍历数据集的次数）</span></label>
+          <input type="number" id="epochs" value="10" min="1" max="200">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Batch Size</span> 批次大小 <span class="param-desc">（每批喂入的样本数）</span></label>
+          <input type="number" id="batch_size" value="32" min="4" max="512" step="4">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Learning Rate</span> 学习率 <span class="param-desc">（参数更新的步长）</span></label>
+          <input type="number" id="lr" value="0.0005" min="0.00001" max="0.1" step="0.0001">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Max Samples</span> 最大样本数 <span class="param-desc">（限制训练数据量，留空使用全部）</span></label>
+          <input type="number" id="max_samples" placeholder="all" min="100">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Max Seq Len</span> 最大序列长度 <span class="param-desc">（句子最大词数）</span></label>
+          <input type="number" id="max_len" value="64" min="16" max="256">
+        </div>
+        <hr>
+        <h4>模型架构</h4>
+        <div class="form-row">
+          <label><span class="param-name">d_model</span> 词嵌入维度 <span class="param-desc">（Transformer隐藏层维度）</span></label>
+          <input type="number" id="d_model" value="256" min="64" max="1024" step="64">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">nhead</span> 注意力头数 <span class="param-desc">（d_model需被其整除）</span></label>
+          <input type="number" id="nhead" value="8" min="1" max="16">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Encoder Layers</span> 编码器层数</label>
+          <input type="number" id="num_encoder_layers" value="3" min="1" max="12">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Decoder Layers</span> 解码器层数</label>
+          <input type="number" id="num_decoder_layers" value="3" min="1" max="12">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Feedforward Dim</span> 前馈网络维度 <span class="param-desc">（通常为d_model的2~4倍）</span></label>
+          <input type="number" id="dim_feedforward" value="512" min="128" max="4096" step="128">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Dropout</span> 丢弃率</label>
+          <input type="number" id="dropout" value="0.1" min="0" max="0.5" step="0.05">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Label Smoothing</span> 标签平滑</label>
+          <input type="number" id="label_smoothing" value="0.1" min="0" max="0.3" step="0.05">
+        </div>
+        <div class="form-row">
+          <label><span class="param-name">Grad Clip</span> 梯度裁剪 <span class="param-desc">（限制梯度最大值）</span></label>
+          <input type="number" id="grad_clip" value="1.0" min="0.1" max="10" step="0.1">
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-start" id="btn-start" onclick="startTraining()">&#9654; 开始训练</button>
+          <button type="button" class="btn btn-stop" id="btn-stop" onclick="stopTraining()" disabled>&#9632; 停止</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>&#128190; 模型 / 检查点</h3>
+      <div id="model-info" class="info-text">未加载模型</div>
+      <select id="checkpoint-select" class="checkpoint-select" onchange="loadCheckpoint()">
+        <option value="">-- 选择检查点 --</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- Progress -->
+    <div class="panel progress-panel">
+      <div class="progress-header">
+        <span id="epoch-info">就绪</span>
+        <span id="time-elapsed"></span>
+      </div>
+      <div class="progress-bars">
+        <div class="bar-row">
+          <span class="bar-label">Epoch</span>
+          <div class="bar-bg"><div class="bar-fill epoch-fill" id="epoch-bar"></div></div>
+          <span class="bar-pct" id="epoch-pct">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Batch</span>
+          <div class="bar-bg"><div class="bar-fill batch-fill" id="batch-bar"></div></div>
+          <span class="bar-pct" id="batch-pct">0%</span>
+        </div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric">
+          <span class="metric-label">Train Loss</span>
+          <span class="metric-value" id="metric-train-loss">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Val Loss</span>
+          <span class="metric-value" id="metric-val-loss">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">BLEU</span>
+          <span class="metric-value" id="metric-bleu">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Best BLEU</span>
+          <span class="metric-value" id="metric-best-bleu">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="panel chart-panel">
+        <h3>Loss</h3>
+        <canvas id="loss-chart"></canvas>
+      </div>
+      <div class="panel chart-panel">
+        <h3>BLEU Score</h3>
+        <canvas id="bleu-chart"></canvas>
+      </div>
+    </div>
+    <div class="panel chart-panel full-width">
+      <h3>Batch Loss (Recent)</h3>
+      <canvas id="batch-loss-chart"></canvas>
+    </div>
+
+    <!-- Log -->
+    <div class="panel">
+      <h3>&#128221; 训练日志</h3>
+      <div class="log-console" id="log-console"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/train.js"></script>
+</body>
+</html>

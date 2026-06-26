@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>翻译 - NMT Trainer</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>NMT Trainer</h1>
+  <nav class="nav-tabs">
+    <a class="nav-tab" href="/train">&#9881; 训练</a>
+    <span class="nav-tab active">&#128172; 翻译</span>
+  </nav>
+  <span class="dev-badge" id="device-badge">--</span>
+</header>
+
+<div class="main translate-page">
+
+  <!-- 模型状态 + 加载 -->
+  <div class="panel" id="model-status-panel">
+    <h3>&#128190; 模型状态</h3>
+    <div id="model-info" class="info-text">未加载模型</div>
+    <div id="model-load-status" class="info-text"></div>
+    <div class="model-load-row">
+      <select id="checkpoint-select" class="checkpoint-select" style="flex:1;">
+        <option value="">-- 选择检查点 --</option>
+      </select>
+      <button class="btn btn-start" onclick="loadCheckpoint()" style="flex:none;width:80px;font-size:12px;padding:6px 12px;">加载</button>
+    </div>
+  </div>
+
+  <!-- 模型信息卡片 -->
+  <div class="panel" id="model-card-panel" style="display:none;">
+    <h3>&#128269; 模型详情</h3>
+    <div class="model-card" id="model-card-grid"></div>
+  </div>
+
+  <!-- 单句翻译 -->
+  <div class="panel">
+    <h3>&#128172; 单句翻译</h3>
+    <div class="translate-section">
+      <input type="text" id="translate-input" class="translate-input" placeholder="输入英文句子, 按 Enter 翻译...">
+      <button class="btn btn-start" id="btn-translate" onclick="doTranslate()">翻译</button>
+    </div>
+    <div class="translate-output" id="translate-output"></div>
+  </div>
+
+  <!-- 批量翻译 -->
+  <div class="panel">
+    <h3>&#128196; 批量翻译</h3>
+    <p style="font-size:12px;color:#71717a;margin-bottom:12px;">智能分句 — 按标点(.!?)自动拆分每段为句子，逐句翻译后重组。空行分隔段落。</p>
+    <div class="batch-panel">
+      <div class="batch-col">
+        <h4>输入 (英文)</h4>
+        <textarea id="batch-input" class="batch-textarea" placeholder="Hello, how are you?&#10;The weather is nice today.&#10;I love machine learning."></textarea>
+      </div>
+      <div class="batch-actions">
+        <button class="btn btn-start" id="btn-batch-translate" onclick="doBatchTranslate()" style="width:60px;flex:none;">翻译</button>
+      </div>
+      <div class="batch-col">
+        <h4>输出 (中文)</h4>
+        <textarea id="batch-output" class="batch-textarea" readonly placeholder="翻译结果将显示在这里..."></textarea>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+      <span id="batch-progress" style="font-size:12px;color:#71717a;"></span>
+      <button class="btn btn-start" onclick="copyBatchOutput()" style="flex:none;width:80px;font-size:12px;" id="btn-copy" disabled>&#128203; 复制结果</button>
+      <button class="btn btn-stop" onclick="clearBatch()" style="flex:none;width:80px;font-size:12px;">&#10005; 清空</button>
+    </div>
+  </div>
+
+  <!-- 翻译历史 -->
+  <div class="panel">
+    <h3>&#128337; 翻译历史</h3>
+    <div class="history-list" id="history-list">
+      <div class="empty-state">
+        <div class="icon">&#128172;</div>
+        <div>暂无翻译记录</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-stop" onclick="clearHistory()" style="flex:none;width:80px;font-size:12px;" id="btn-clear-history">清空历史</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="/static/translate.js"></script>
+</body>
+</html>
